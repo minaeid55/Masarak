@@ -2,14 +2,14 @@
 
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { HRDashboard } from "@/features/hr/components/HRDashboard";
+import { AdminDashboard } from "@/features/admin/components/AdminDashboard";
 
-export default function ForRecruitersPage() {
+export default function AdminPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[#050509] text-white">
         <Navbar />
-        <HRDashboard />
+        <AdminDashboard />
       </div>
     </ProtectedRoute>
   );
