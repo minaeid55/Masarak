@@ -1,38 +1,57 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
 
-type ButtonVariant = "primary" | "secondary";
+import { cn } from "@/lib/utils";
 
-const variantStyles: Record<ButtonVariant, string> = {
-  primary:
-    "bg-gradient-primary text-white hover:opacity-90 transition-all",
-  secondary:
-    "glass-card border border-indigo-500/30 text-indigo-400 hover:bg-white/5 transition-all",
-};
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-900 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        primary: "primary-btn text-white",
+        secondary:
+          "glass-card border border-indigo-500/30 text-indigo-400 hover:bg-white/5",
+        ghost: "text-gray-300 hover:text-white hover:bg-white/5",
+        outline:
+          "border border-white/10 text-white hover:border-indigo-500/50 hover:bg-indigo-500/10",
+      },
+      size: {
+        default: "px-8 py-4 text-lg",
+        sm: "px-4 py-2.5 text-sm",
+        lg: "px-8 py-4 text-lg",
+        icon: "h-10 w-10",
+      },
+    },
+    defaultVariants: {
+      variant: "primary",
+      size: "default",
+    },
+  }
+);
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: ButtonVariant;
-  icon?: ReactNode;
-};
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean;
+    icon?: React.ReactNode;
+  };
 
-export function Button({
-  variant = "primary",
-  icon,
-  className = "",
-  children,
-  ...props
-}: ButtonProps) {
-  return (
-    <button
-      type="button"
-      className={`${variantStyles[variant]} ${className}`.trim()}
-      {...props}
-    >
-      {icon ? (
-        <span className="inline-flex items-center justify-center gap-2">
-          {icon}
-        </span>
-      ) : null}
-      {children}
-    </button>
-  );
-}
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, icon, children, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      >
+        {icon}
+        {children}
+      </Comp>
+    );
+  }
+);
+Button.displayName = "Button";
+
+export { Button, buttonVariants };

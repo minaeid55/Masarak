@@ -1,6 +1,7 @@
 import React from "react";
 import { FiUploadCloud, FiCpu, FiCheckCircle } from "react-icons/fi";
-
+ 
+// HowItWorksSection.tsx is for home section "How It Works" with three steps 
 export function HowItWorksSection(): React.ReactElement {
   return (
     <section

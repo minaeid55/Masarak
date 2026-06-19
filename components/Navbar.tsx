@@ -1,18 +1,23 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { signOut, useSession } from "next-auth/react";
+import { useState } from "react";
 import { FiMenu, FiX } from "react-icons/fi";
 
+import { Button } from "@/components/ui/Button";
+
 const navigation = [
-  { href: "#features", label: "Features" },
-  { href: "#how-it-works", label: "How it Works" },
-  { href: "#for-hr", label: "For HR" },
-  { href: "#pricing", label: "Pricing" },
+  { href: "/", label: "Home", authRequired: false },
+  { href: "/find-jobs", label: "Find Jobs", authRequired: true },
+  { href: "/insights", label: "Insights", authRequired: true },
+  { href: "/for-recruiters", label: "For Recruiters", authRequired: true },
 ];
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated";
 
   return (
     <nav
@@ -21,7 +26,6 @@ export function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          {/* LOGO */}
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl brand-linear flex items-center justify-center">
               <svg
@@ -33,43 +37,68 @@ export function Navbar() {
                 <path d="M512 96c0 50.2-59.1 125.1-84.6 155c-3.8 4.4-9.4 6.1-14.5 5H320c-17.7 0-32 14.3-32 32s14.3 32 32 32h96c53 0 96 43 96 96s-43 96-96 96H139.6c8.7-9.9 19.3-22.6 30-36.8c6.3-8.4 12.8-17.6 19-27.2H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320c-53 0-96-43-96-96s43-96 96-96h39.8c-21-31.5-39.8-67.7-39.8-96c0-53 43-96 96-96s96 43 96 96zM117.1 489.1c-3.8 4.3-7.2 8.1-10.1 11.3l-1.8 2-.2-.2c-6 4.6-14.6 4-20-1.8C59.8 473 0 402.5 0 352c0-53 43-96 96-96s96 43 96 96c0 30-21.1 67-43.5 97.9c-10.7 14.7-21.7 28-30.8 38.5l-.6 .7zM128 352a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zM416 128a32 32 0 1 0 0-64 32 32 0 1 0 0 64z" />
               </svg>
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">
-              Masarak
-            </span>
+            <span className="text-2xl font-bold text-white tracking-tight">Masarak</span>
           </div>
 
-          {/* NAV LINKS */}
           <div className="hidden md:flex space-x-8 items-center">
-            {navigation.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
-              >
-                {label}
-              </Link>
-            ))}
+            {navigation.map(({ href, label, authRequired }) => {
+              if (!authRequired || isAuthenticated) {
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+                  >
+                    {label}
+                  </Link>
+                );
+              }
+
+              return (
+                <Link
+                  key={href}
+                  href="/login"
+                  className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* 🔥 UPDATED AUTH BUTTONS (CREATIVE PART ONLY) */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-xl text-sm font-medium text-white border border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all duration-300"
-            >
-              Log in
-            </Link>
-
-            <Link
-              href="/signup"
-              className="relative px-5 py-2 rounded-xl text-sm font-semibold text-white bg-linear-to-r from-indigo-500 to-purple-600 hover:opacity-90 transition-all duration-300 shadow-lg shadow-indigo-500/25"
-            >
-              Sign up
-              <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 hover:opacity-20 transition"></span>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <span className="text-sm text-gray-300">
+                  {session?.user?.name ?? session?.user?.email}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                >
+                  Log out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-white border border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all duration-300"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="relative px-5 py-2 rounded-xl text-sm font-semibold text-white bg-linear-to-r from-indigo-500 to-purple-600 hover:opacity-90 transition-all duration-300 shadow-lg shadow-indigo-500/25"
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
 
-          {/* MOBILE MENU BUTTON */}
           <div className="md:hidden flex items-center">
             <button
               type="button"
@@ -77,23 +106,18 @@ export function Navbar() {
               className="text-gray-300 hover:text-white"
               onClick={() => setMenuOpen((current) => !current)}
             >
-              {menuOpen ? (
-                <FiX className="text-2xl" />
-              ) : (
-                <FiMenu className="text-2xl" />
-              )}
+              {menuOpen ? <FiX className="text-2xl" /> : <FiMenu className="text-2xl" />}
             </button>
           </div>
         </div>
 
-        {/* MOBILE MENU */}
         {menuOpen ? (
           <div className="md:hidden mt-4 space-y-4 pb-5">
             <div className="space-y-3 rounded-3xl border border-white/10 bg-slate-950/90 p-4">
-              {navigation.map(({ href, label }) => (
+              {navigation.map(({ href, label, authRequired }) => (
                 <Link
                   key={href}
-                  href={href}
+                  href={authRequired && !isAuthenticated ? "/login" : href}
                   onClick={() => setMenuOpen(false)}
                   className="block text-gray-300 hover:text-white transition-colors text-sm font-medium"
                 >
@@ -103,21 +127,42 @@ export function Navbar() {
             </div>
 
             <div className="flex flex-col gap-3">
-              <Link
-                href="/login"
-                onClick={() => setMenuOpen(false)}
-                className="text-gray-300 hover:text-white font-medium text-sm"
-              >
-                Log in
-              </Link>
-
-              <Link
-                href="/signup"
-                onClick={() => setMenuOpen(false)}
-                className="w-full text-center px-5 py-3 rounded-xl text-white font-semibold text-sm bg-linear-to-r from-indigo-500 to-purple-600"
-              >
-                Sign up
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <span className="text-gray-300 text-sm px-2">
+                    {session?.user?.name ?? session?.user?.email}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      signOut({ callbackUrl: "/" });
+                    }}
+                  >
+                    Log out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="text-gray-300 hover:text-white font-medium text-sm"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setMenuOpen(false)}
+                    className="w-full text-center px-5 py-3 rounded-xl text-white font-semibold text-sm bg-linear-to-r from-indigo-500 to-purple-600"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         ) : null}

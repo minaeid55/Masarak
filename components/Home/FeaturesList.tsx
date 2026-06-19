@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiZap, FiBriefcase, FiBarChart2, FiUser } from 'react-icons/fi';
+// FeaturesList.tsx is for home section "Powerful Features for Your Career"  
 
 export function FeaturesList(): React.ReactElement {
   return (

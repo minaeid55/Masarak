@@ -1,8 +1,9 @@
 import Image from "next/image";
 import { FiTrendingUp } from "react-icons/fi";
 import { FaBriefcase, FaGoogle, FaFigma } from "react-icons/fa";
-import { Card } from "./ui/Card";
-
+import { Card } from "../ui/Card";
+ 
+// DashboardPreview is a component that shows in home. 
 const stats = [
   {
     label: "CV Score",

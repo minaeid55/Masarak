@@ -1,5 +1,5 @@
 import { FaCheckCircle } from "react-icons/fa";
-
+// Features.tsx is for home section "Features" behind Upload cv button.
 const features = [
   { label: "Free Analysis" },
   { label: "Smart Matching" },

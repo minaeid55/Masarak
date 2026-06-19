@@ -1,6 +1,7 @@
 import React from "react";
 import { FaMicrosoft, FaAmazon, FaSpotify, FaSlack } from "react-icons/fa";
 
+// CompaniesSection.tsx is for home section "Trusted by Hiring Managers at Top Companies"
 export function CompaniesSection(): React.ReactElement {
   return (
     <section

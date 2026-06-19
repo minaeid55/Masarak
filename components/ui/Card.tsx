@@ -1,11 +1,16 @@
-import type { HTMLAttributes } from "react";
+import * as React from "react";
 
-type CardProps = HTMLAttributes<HTMLDivElement>;
+import { cn } from "@/lib/utils";
 
-export function Card({ children, className = "", ...props }: CardProps) {
-  return (
-    <div className={`glass-card rounded-2xl bg-white/5 ${className}`.trim()} {...props}>
-      {children}
-    </div>
-  );
-}
+const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn("glass-card rounded-2xl bg-white/5", className)}
+      {...props}
+    />
+  )
+);
+Card.displayName = "Card";
+
+export { Card };
