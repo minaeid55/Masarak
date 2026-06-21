@@ -17,11 +17,13 @@ import {
 } from "@/features/auth/components/auth-layout-parts";
 import { AuthInputField, PasswordField } from "@/features/auth/components/auth-fields";
 import { AuthPageLayout } from "@/features/auth/components/auth-page-layout";
+import { loginApi, type AuthRole } from "@/features/auth/services/auth.api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<AuthRole>("jobseeker");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,24 +31,49 @@ export default function LoginPage() {
     setLoading(true);
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "");
+    const username = String(formData.get("username") ?? "").trim();
     const password = String(formData.get("password") ?? "");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    setLoading(false);
-
-    if (result?.error) {
-      setError("Invalid email or password.");
+    if (!username || !password) {
+      setError("Username and password are required.");
+      setLoading(false);
       return;
     }
 
-    router.push("/find-jobs");
-    router.refresh();
+    try {
+      const response = await loginApi(username, password, role);
+
+      if (!response.ok) {
+        setError(response.data.message || "Invalid username or password.");
+        setLoading(false);
+        return;
+      }
+
+      const accessToken = response.data.accessToken;
+      if (!accessToken) {
+        setError("Login failed. No token returned.");
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("role", role);
+
+      switch (role) {
+        case "jobseeker":
+          router.push("/find-jobs");
+          break;
+        case "hr":
+          router.push("/for-recruiters");
+          break;
+        case "admin":
+          router.push("/admin");
+          break;
+      }
+    } catch (err: any) {
+      setError(err?.message ?? "Unable to login. Please try again.");
+      setLoading(false);
+    }
   }
 
   return (
@@ -71,17 +98,47 @@ export default function LoginPage() {
           }
         />
 
+        <div className="mb-6 flex justify-center gap-2">
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 text-sm font-medium ${
+              role === "jobseeker" ? "bg-indigo-600 text-white" : "bg-dark-800 text-gray-400"
+            }`}
+            onClick={() => setRole("jobseeker")}
+          >
+            Applicant
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 text-sm font-medium ${
+              role === "hr" ? "bg-indigo-600 text-white" : "bg-dark-800 text-gray-400"
+            }`}
+            onClick={() => setRole("hr")}
+          >
+            HR
+          </button>
+          <button
+            type="button"
+            className={`rounded-full px-4 py-2 text-sm font-medium ${
+              role === "admin" ? "bg-indigo-600 text-white" : "bg-dark-800 text-gray-400"
+            }`}
+            onClick={() => setRole("admin")}
+          >
+            Admin
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <AuthInputField
-            id="email"
-            name="email"
-            type="email"
-            placeholder="Email address"
-            autoComplete="email"
+            id="username"
+            name="username"
+            type="text"
+            placeholder="Username"
+            autoComplete="username"
             required
             icon={
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 512 512">
-                <path d="M64 112c-8.8 0-16 7.2-16 16v22.1L220.5 291.7c20.7 17 50.4 17 71.1 0L464 150.1V128c0-8.8-7.2-16-16-16H64zM48 212.2V384c0 8.8 7.2 16 16 16H448c8.8 0 16-7.2 16-16V212.2L322 328.8c-38.4 31.5-93.7 31.5-132 0L48 212.2zM0 128C0 92.7 28.7 64 64 64H448c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128z" />
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
+                <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zM313.6 288h-15.7c-22.2 10-46 16-73.9 16s-51.7-6-73.9-16h-15.7C60.3 288 0 348.3 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.1-60.3-134.4-134.4-134.4z" />
               </svg>
             }
           />
@@ -137,7 +194,16 @@ export default function LoginPage() {
             variant="secondary"
             size="sm"
             className="social-btn w-full py-3.5 text-white"
-            onClick={() => signIn("auth0", { callbackUrl: "/find-jobs" })}
+            onClick={() =>
+              signIn("auth0", {
+                callbackUrl:
+                  role === "jobseeker"
+                    ? "/find-jobs"
+                    : role === "hr"
+                    ? "/for-recruiters"
+                    : "/admin",
+              })
+            }
           >
             Auth0
           </Button>

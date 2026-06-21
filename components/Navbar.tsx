@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
 import { FiMenu, FiX } from "react-icons/fi";
@@ -17,7 +18,15 @@ const navigation = [
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const isAuthenticated = status === "authenticated";
+
+  const isActiveLink = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <nav
@@ -29,7 +38,7 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl brand-linear flex items-center justify-center">
               <svg
-                className="w-5 h-5 text-white"
+                className="w-4 h-5 text-white"
                 aria-hidden="true"
                 fill="currentColor"
                 viewBox="0 0 512 512"
@@ -42,12 +51,19 @@ export function Navbar() {
 
           <div className="hidden md:flex space-x-8 items-center">
             {navigation.map(({ href, label, authRequired }) => {
-              if (!authRequired || isAuthenticated) {
+              const isActive = isActiveLink(href);
+              const showLink = !authRequired || isAuthenticated;
+              
+              if (!showLink) {
                 return (
                   <Link
                     key={href}
-                    href={href}
-                    className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+                    href="/login"
+                    className={`text-sm font-medium transition-colors ${
+                      isActive
+                        ? "text-indigo-400"
+                        : "text-gray-300 hover:text-white"
+                    }`}
                   >
                     {label}
                   </Link>
@@ -57,8 +73,12 @@ export function Navbar() {
               return (
                 <Link
                   key={href}
-                  href="/login"
-                  className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+                  href={href}
+                  className={`text-sm font-medium transition-colors ${
+                    isActive
+                      ? "text-indigo-400"
+                      : "text-gray-300 hover:text-white"
+                  }`}
                 >
                   {label}
                 </Link>
@@ -85,13 +105,21 @@ export function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-white border border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all duration-300"
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
+                    pathname === "/login"
+                      ? "text-indigo-400 border border-indigo-500/50 bg-indigo-500/10"
+                      : "text-white border border-white/10 hover:border-indigo-500/50 hover:bg-indigo-500/10"
+                  }`}
                 >
                   Log in
                 </Link>
                 <Link
                   href="/signup"
-                  className="relative px-5 py-2 rounded-xl text-sm font-semibold text-white bg-linear-to-r from-indigo-500 to-purple-600 hover:opacity-90 transition-all duration-300 shadow-lg shadow-indigo-500/25"
+                  className={`relative px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-300 shadow-lg shadow-indigo-500/25 ${
+                    pathname === "/signup"
+                      ? "bg-gradient-to-r from-indigo-600 to-purple-700 ring-2 ring-indigo-400/50"
+                      : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90"
+                  }`}
                 >
                   Sign up
                 </Link>
@@ -114,16 +142,25 @@ export function Navbar() {
         {menuOpen ? (
           <div className="md:hidden mt-4 space-y-4 pb-5">
             <div className="space-y-3 rounded-3xl border border-white/10 bg-slate-950/90 p-4">
-              {navigation.map(({ href, label, authRequired }) => (
-                <Link
-                  key={href}
-                  href={authRequired && !isAuthenticated ? "/login" : href}
-                  onClick={() => setMenuOpen(false)}
-                  className="block text-gray-300 hover:text-white transition-colors text-sm font-medium"
-                >
-                  {label}
-                </Link>
-              ))}
+              {navigation.map(({ href, label, authRequired }) => {
+                const isActive = isActiveLink(href);
+                const showLink = !authRequired || isAuthenticated;
+                
+                return (
+                  <Link
+                    key={href}
+                    href={showLink ? href : "/login"}
+                    onClick={() => setMenuOpen(false)}
+                    className={`block text-sm font-medium transition-colors ${
+                      isActive
+                        ? "text-indigo-400"
+                        : "text-gray-300 hover:text-white"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
             </div>
 
             <div className="flex flex-col gap-3">
@@ -150,14 +187,22 @@ export function Navbar() {
                   <Link
                     href="/login"
                     onClick={() => setMenuOpen(false)}
-                    className="text-gray-300 hover:text-white font-medium text-sm"
+                    className={`font-medium text-sm transition-colors ${
+                      pathname === "/login"
+                        ? "text-indigo-400"
+                        : "text-gray-300 hover:text-white"
+                    }`}
                   >
                     Log in
                   </Link>
                   <Link
                     href="/signup"
                     onClick={() => setMenuOpen(false)}
-                    className="w-full text-center px-5 py-3 rounded-xl text-white font-semibold text-sm bg-linear-to-r from-indigo-500 to-purple-600"
+                    className={`w-full text-center px-5 py-3 rounded-xl text-white font-semibold text-sm transition-all ${
+                      pathname === "/signup"
+                        ? "bg-gradient-to-r from-indigo-600 to-purple-700 ring-2 ring-indigo-400/50"
+                        : "bg-gradient-to-r from-indigo-500 to-purple-600"
+                    }`}
                   >
                     Sign up
                   </Link>

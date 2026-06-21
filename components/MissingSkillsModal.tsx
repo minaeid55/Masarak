@@ -21,7 +21,6 @@ type MissingSkillsModalProps = {
   job: JobSummary | null;
   missingSkills: MissingSkill[];
   onClose: () => void;
-  onFindCourses: () => void;
   onApplyAnyway: () => void;
 };
 
@@ -30,7 +29,6 @@ export function MissingSkillsModal({
   job,
   missingSkills,
   onClose,
-  onFindCourses,
   onApplyAnyway,
 }: MissingSkillsModalProps) {
   if (!open || !job) {
@@ -105,14 +103,7 @@ export function MissingSkillsModal({
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full sm:w-auto bg-violet-500/10 text-violet-200 hover:bg-violet-500/20"
-              onClick={onFindCourses}
-            >
-              Find Courses
-            </Button>
+           
             <Button
               type="button"
               variant="primary"

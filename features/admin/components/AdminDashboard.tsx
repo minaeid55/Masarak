@@ -22,7 +22,6 @@ const sections = [
   { id: "approvals", label: "HR Approvals" },
   { id: "users", label: "User Management" },
   { id: "feedback", label: "Feedback" },
-  { id: "activity", label: "Activity Logs" },
 ] as const;
 
 type SectionId = (typeof sections)[number]["id"];
@@ -373,40 +372,7 @@ export function AdminDashboard() {
             </div>
           </div>
         );
-      case "activity":
-        return (
-          <div className="space-y-6">
-            <div className="rounded-4xl border border-white/10 bg-[#0b1018] p-6 shadow-xl shadow-black/20">
-              <h2 className="text-2xl font-semibold text-white">Activity Logs</h2>
-              <p className="mt-2 text-sm text-slate-400">Review recent system activity and administrative actions.</p>
-            </div>
-            <div className="overflow-hidden rounded-4xl border border-white/10 bg-slate-950/90 shadow-xl shadow-black/10">
-              <table className="min-w-full divide-y divide-white/10 text-left text-sm">
-                <thead className="bg-slate-900/90 text-slate-400">
-                  <tr>
-                    <th className="px-6 py-4">Timestamp</th>
-                    <th className="px-6 py-4">User</th>
-                    <th className="px-6 py-4">Action</th>
-                    <th className="px-6 py-4">IP Address</th>
-                    <th className="px-6 py-4">Details</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10 bg-slate-950/80">
-                  {activityLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td className="px-6 py-4 text-slate-300">{log.timestamp}</td>
-                      <td className="px-6 py-4 text-white">{log.user}</td>
-                      <td className="px-6 py-4 text-slate-300">{log.action}</td>
-                      <td className="px-6 py-4 text-slate-300">{log.ipAddress}</td>
-                      <td className="px-6 py-4 text-slate-300">{log.details}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      default:
+         default:
         return (
           <div className="space-y-6">
             <div className="grid gap-4 xl:grid-cols-3">
@@ -429,31 +395,6 @@ export function AdminDashboard() {
                 <p className="text-sm font-bold tracking-[0.3em] text-slate-400">Total Applications</p>
                 <p className="mt-4 text-4xl font-semibold text-white">{totalApplications}</p>
               </Card>
-            </div>
-            <div className="rounded-4xl border border-white/10 bg-slate-950/90 p-6 shadow-xl shadow-black/10">
-              <h2 className="text-2xl font-semibold text-white">Recent Activity</h2>
-              <div className="mt-6 overflow-x-auto">
-                <table className="min-w-full divide-y divide-white/10 text-left text-sm">
-                  <thead className="bg-slate-900/90 text-slate-400">
-                    <tr>
-                      <th className="px-6 py-4">Timestamp</th>
-                      <th className="px-6 py-4">User</th>
-                      <th className="px-6 py-4">Action</th>
-                      <th className="px-6 py-4">Details</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/10 bg-slate-950/80">
-                    {activityLogs.slice(0, 4).map((log) => (
-                      <tr key={log.id}>
-                        <td className="px-6 py-4 text-slate-300">{log.timestamp}</td>
-                        <td className="px-6 py-4 text-white">{log.user}</td>
-                        <td className="px-6 py-4 text-slate-300">{log.action}</td>
-                        <td className="px-6 py-4 text-slate-300">{log.details}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             </div>
           </div>
         );

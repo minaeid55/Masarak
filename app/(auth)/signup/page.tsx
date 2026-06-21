@@ -7,7 +7,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { signupAction } from "@/features/auth/actions/auth.actions";
 import { signupBranding } from "@/features/auth/constants/auth-content";
 import {
   AuthBrandingPanel,
@@ -21,24 +20,136 @@ export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<"user" | "hr">("user");
+  const [verificationFileName, setVerificationFileName] = useState<string>("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setLoading(true);
 
-    const formData = new FormData(event.currentTarget);
-    const result = await signupAction(formData);
+    try {
+      const form = event.currentTarget;
+      const formData = new FormData(form);
 
-    setLoading(false);
+      const username = String(formData.get("username") ?? "").trim();
+      const email = String(formData.get("email") ?? "").trim();
+      const password = String(formData.get("password") ?? "");
+      const confirmPassword = String(formData.get("confirmPassword") ?? "");
+      const first_name = String(formData.get("first_name") ?? "").trim();
+      const last_name = String(formData.get("last_name") ?? "").trim();
 
-    if (!result.success) {
-      setError(result.message);
-      return;
+      if (!username || !email || !password || !first_name || !last_name) {
+        setError("Please fill in all required fields.");
+        setLoading(false);
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError("Please enter a valid email address.");
+        setLoading(false);
+        return;
+      }
+
+      if (password.length < 8) {
+        setError("Password must be at least 8 characters.");
+        setLoading(false);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        setLoading(false);
+        return;
+      }
+
+      if (role === "user") {
+        const payload = {
+          username,
+          email,
+          password,
+          first_name,
+          last_name,
+        };
+
+        const res = await fetch("https://masarak-rt9w.onrender.com/api/auth/signup/user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json().catch(() => ({ message: "Unknown error" }));
+
+        if (!res.ok) {
+          setError(data?.message ?? "Unable to create account.");
+          setLoading(false);
+          return;
+        }
+
+        setLoading(false);
+        router.push(`/verify-email?email=${encodeURIComponent(email)}&role=${role === "user" ? "jobseeker" : "hr"}`);
+        return;
+      }
+
+      // HR
+      const company = String(formData.get("company") ?? "").trim();
+      const national_id = String(formData.get("national_id") ?? "").trim();
+      const file = formData.get("image_verification");
+
+      if (!company || !national_id || !file) {
+        setError("Please fill in all required fields and attach verification image.");
+        setLoading(false);
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append("username", username);
+      fd.append("email", email);
+      fd.append("password", password);
+      fd.append("first_name", first_name);
+      fd.append("last_name", last_name);
+      fd.append("company", company);
+      fd.append("national_id", national_id);
+      if (file instanceof File) {
+        fd.append("image_verification", file);
+      } else {
+        try {
+          // @ts-ignore
+          if (file && file[0]) fd.append("image_verification", file[0]);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      const res = await fetch("https://masarak-rt9w.onrender.com/api/auth/signup/hr", {
+        method: "POST",
+        body: fd,
+      });
+
+      const data = await res.json().catch(() => ({ message: "Unknown error" }));
+
+      if (!res.ok) {
+        setError(data?.message ?? "Unable to create account.");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(false);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}&role=hr`);
+    } catch (err: any) {
+      setError(err?.message ?? "An unexpected error occurred.");
+      setLoading(false);
     }
-
-    router.push("/login?registered=1");
   }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setVerificationFileName(e.target.files[0].name);
+    } else {
+      setVerificationFileName("");
+    }
+  };
 
   return (
     <AuthPageLayout mainClassName="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center min-h-screen relative z-10 mt-24">
@@ -63,18 +174,37 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="flex items-center gap-2 justify-center">
+            <button
+              type="button"
+              onClick={() => setRole("user")}
+              className={`px-4 py-2 rounded-xl text-sm ${role === "user" ? "bg-indigo-600 text-white" : "text-gray-400 bg-dark-800"}`}
+            >
+              Job Seeker
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("hr")}
+              className={`px-4 py-2 rounded-xl text-sm ${role === "hr" ? "bg-indigo-600 text-white" : "text-gray-400 bg-dark-800"}`}
+            >
+              Employer (HR)
+            </button>
+          </div>
+
+          <input type="hidden" name="role" value={role} />
+
           <div>
-            <Label htmlFor="fullName" className="mb-1.5">
-              Full Name
+            <Label htmlFor="username" className="mb-1.5">
+              Username
             </Label>
             <AuthInputField
-              id="fullName"
-              name="fullName"
-              placeholder="John Doe"
+              id="username"
+              name="username"
+              placeholder="username"
               required
               icon={
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
-                  <path d="M304 128a80 80 0 1 0 -160 0 80 80 0 1 0 160 0zM96 128a128 128 0 1 1 256 0A128 128 0 1 1 96 128zM49.3 464H398.7c-8.9-63.3-63.3-112-129-112H178.3c-65.7 0-120.1 48.7-129 112zM0 482.3C0 383.8 79.8 304 178.3 304h91.4C368.2 304 448 383.8 448 482.3c0 16.4-13.3 29.7-29.7 29.7H29.7C13.3 512 0 498.7 0 482.3z" />
+                  <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zM313.6 288h-15.7c-22.2 10-46 16-73.9 16s-51.7-6-73.9-16h-15.7C60.3 288 0 348.3 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.1-60.3-134.4-134.4-134.4z" />
                 </svg>
               }
               className="pl-10 py-2.5"
@@ -83,7 +213,7 @@ export default function RegisterPage() {
 
           <div>
             <Label htmlFor="email" className="mb-1.5">
-              Work Email
+              Email
             </Label>
             <AuthInputField
               id="email"
@@ -100,23 +230,27 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div>
-            <Label htmlFor="company" className="mb-1.5">
-              Organization / Company{" "}
-              <span className="text-gray-500 text-xs font-normal">(Optional)</span>
-            </Label>
-            <AuthInputField
-              id="company"
-              name="company"
-              placeholder="Acme Inc."
-              icon={
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 384 512">
-                  <path d="M64 48c-8.8 0-16 7.2-16 16V448c0 8.8 7.2 16 16 16h80V400c0-26.5 21.5-48 48-48s48 21.5 48 48v64h80c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H64zM0 64C0 28.7 28.7 0 64 0H320c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64z" />
-                </svg>
-              }
-              className="pl-10 py-2.5"
-            />
-          </div>
+          {role === "hr" ? (
+            <>
+              <div>
+                <Label htmlFor="company" className="mb-1.5">
+                  Organization / Company
+                </Label>
+                <AuthInputField
+                  id="company"
+                  name="company"
+                  placeholder="Acme Inc."
+                  required={role === "hr"}
+                  icon={
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 384 512">
+                      <path d="M64 48c-8.8 0-16 7.2-16 16V448c0 8.8 7.2 16 16 16h80V400c0-26.5 21.5-48 48-48s48 21.5 48 48v64h80c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H64zM0 64C0 28.7 28.7 0 64 0H320c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64z" />
+                    </svg>
+                  }
+                  className="pl-10 py-2.5"
+                />
+              </div>
+            </>
+          ) : null}
 
           <div>
             <Label htmlFor="password" className="mb-1.5">
@@ -152,6 +286,96 @@ export default function RegisterPage() {
               inputClassName="py-2.5 pl-10"
             />
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="first_name" className="mb-1.5">
+                First Name
+              </Label>
+              <AuthInputField
+                id="first_name"
+                name="first_name"
+                placeholder="John"
+                required
+                icon={
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
+                    <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zM313.6 288h-15.7c-22.2 10-46 16-73.9 16s-51.7-6-73.9-16h-15.7C60.3 288 0 348.3 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.1-60.3-134.4-134.4-134.4z" />
+                  </svg>
+                }
+                className="pl-10 py-2.5"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="last_name" className="mb-1.5">
+                Last Name
+              </Label>
+              <AuthInputField
+                id="last_name"
+                name="last_name"
+                placeholder="Doe"
+                required
+                icon={
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
+                    <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zM313.6 288h-15.7c-22.2 10-46 16-73.9 16s-51.7-6-73.9-16h-15.7C60.3 288 0 348.3 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.1-60.3-134.4-134.4-134.4z" />
+                  </svg>
+                }
+                className="pl-10 py-2.5"
+              />
+            </div>
+          </div>
+
+          {role === "hr" ? (
+            <>
+              <div>
+                <div className="mt-4">
+                  <Label htmlFor="national_id" className="mb-1.5">
+                    National ID
+                  </Label>
+                  <AuthInputField
+                    id="national_id"
+                    name="national_id"
+                    placeholder="ID Number"
+                    required
+                    icon={
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
+                        <path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zM313.6 288h-15.7c-22.2 10-46 16-73.9 16s-51.7-6-73.9-16h-15.7C60.3 288 0 348.3 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.1-60.3-134.4-134.4-134.4z" />
+                      </svg>
+                    }
+                    className="pl-10 py-2.5"
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <Label htmlFor="image_verification" className="mb-1.5 block">
+                    Image Verification
+                  </Label>
+                  <div className="relative">
+                    <input
+                      id="image_verification"
+                      name="image_verification"
+                      type="file"
+                      accept="image/*"
+                      required
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="w-full rounded-2xl border border-white/10 bg-dark-800/50 px-4 py-3 text-sm text-gray-400 flex items-center justify-between transition-all duration-200 hover:border-indigo-500/30">
+                      <span className="truncate">
+                        {verificationFileName || "Choose an image file..."}
+                      </span>
+                      <span className="flex-shrink-0 px-4 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 text-xs font-medium border border-indigo-500/20">
+                        Browse
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-1.5 text-xs text-gray-500">
+                    Upload a photo of yourself holding your national ID (JPG, PNG, WebP)
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : null}
 
           <div className="flex items-start mt-4 gap-3">
             <Checkbox id="terms" required />

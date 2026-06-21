@@ -290,11 +290,6 @@ export function HRDashboard() {
                 </a>
               </Card>
             </div>
-            <div className="mt-6">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditingCompany(true)}>
-                Edit Profile
-              </Button>
-            </div>
           </>
         ) : (
           <div className="mt-4 space-y-4">
@@ -330,43 +325,12 @@ export function HRDashboard() {
                 className="input-glass w-full rounded-3xl px-4 py-3 text-white mt-2"
               />
             </label>
-            <div className="flex gap-3">
-              <Button type="button" variant="primary" size="sm" onClick={() => setIsEditingCompany(false)}>
-                Save
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsEditingCompany(false);
-                  setCompanyProfile(initialCompany);
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
+            
           </div>
         )}
       </div>
 
-      <div className="rounded-[1.75rem] border border-white/10 bg-[#0b1018] p-6 shadow-xl shadow-black/20 sm:p-8">
-        <h3 className="text-xl font-semibold text-white sm:text-2xl">Current hiring health</h3>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <Card className="p-5 bg-[#111827] border border-white/10">
-            <p className="text-sm text-slate-400">Open roles</p>
-            <p className="mt-3 text-3xl font-semibold text-white">{totalJobs}</p>
-          </Card>
-          <Card className="p-5 bg-[#111827] border border-white/10">
-            <p className="text-sm text-slate-400">Active jobs</p>
-            <p className="mt-3 text-3xl font-semibold text-white">{activeJobs}</p>
-          </Card>
-          <Card className="p-5 bg-[#111827] border border-white/10">
-            <p className="text-sm text-slate-400">Pending review</p>
-            <p className="mt-3 text-3xl font-semibold text-white">{pendingJobs}</p>
-          </Card>
-        </div>
-      </div>
+    
     </div>
   );
 
@@ -411,7 +375,7 @@ export function HRDashboard() {
                 <h3 className="mt-2 text-2xl font-semibold text-white">{selectedApplicant.name}</h3>
                 <p className="mt-1 text-sm text-slate-400">
                   Applied for <span className="text-slate-200">{selectedApplicant.role}</span>
-                  {selectedApplicant.appliedAt ? ` on ${selectedApplicant.appliedAt}` : ""}
+                  {selectedApplicant.appliedDate ? ` on ${selectedApplicant.appliedDate}` : ""}
                 </p>
               </div>
               <button type="button" onClick={closeApplicantModal} className="text-slate-400 hover:text-white">
