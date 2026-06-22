@@ -123,7 +123,7 @@ export const users: AdminUser[] = [
     name: "Karim Fouad",
     email: "karim.fouad@example.com",
     type: "HR",
-    status: "Approved",
+    status: "Active",
     company: "NovaSource",
     joinedAt: "2026-01-20",
   },
@@ -247,7 +247,7 @@ export const feedbackEntries: FeedbackEntry[] = [
     sender: "Rana Sherif",
     message: "It would be useful to filter analytics by week, month, or quarter.",
     date: "2026-06-19",
-    status: "Received",
+    status: "Open",
   },
 ];
 
