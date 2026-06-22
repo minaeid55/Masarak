@@ -106,6 +106,66 @@ export const jobs: Job[] = [
     applicants: 0,
     matchPercent: 0,
   },
+  {
+    id: "job-6",
+    title: "Data Analyst",
+    company: "Eagle Analytics",
+    location: "Cairo, Egypt",
+    experience: "Mid-level",
+    salaryRange: "EGP 11,500 - 15,500",
+    status: "Active",
+    postedAt: "2026-06-13",
+    applicants: 18,
+    matchPercent: 88,
+  },
+  {
+    id: "job-7",
+    title: "Customer Success Lead",
+    company: "Beacon HR",
+    location: "Remote",
+    experience: "Senior",
+    salaryRange: "EGP 16,000 - 20,000",
+    status: "Active",
+    postedAt: "2026-06-11",
+    applicants: 12,
+    matchPercent: 90,
+  },
+  {
+    id: "job-8",
+    title: "Mobile Developer",
+    company: "AppSpace",
+    location: "Giza, Egypt",
+    experience: "Mid-level",
+    salaryRange: "EGP 13,000 - 17,500",
+    status: "Awaiting Payment",
+    postedAt: "2026-06-14",
+    applicants: 11,
+    matchPercent: 81,
+  },
+  {
+    id: "job-9",
+    title: "Growth Marketing Specialist",
+    company: "SparkReach",
+    location: "Cairo, Egypt",
+    experience: "Mid-level",
+    salaryRange: "EGP 12,000 - 15,000",
+    status: "Pending Review",
+    postedAt: "2026-06-16",
+    applicants: 17,
+    matchPercent: 75,
+  },
+  {
+    id: "job-10",
+    title: "QA Automation Engineer",
+    company: "Nova Systems",
+    location: "Alexandria, Egypt",
+    experience: "Mid-level",
+    salaryRange: "EGP 13,500 - 17,500",
+    status: "Active",
+    postedAt: "2026-06-09",
+    applicants: 19,
+    matchPercent: 86,
+  },
 ];
 
 export const applicants: Applicant[] = [
@@ -169,6 +229,63 @@ export const applicants: Applicant[] = [
       "I am looking for a place where I can grow into a technical lead while solving meaningful backend challenges.",
     cvFile: "Sara_Nader_CV.pdf",
   },
+  {
+    id: "applicant-4",
+    name: "Yara Samir",
+    role: "Data Analyst",
+    matchScore: 83,
+    experience: "4 years",
+    status: "Applied",
+    appliedDate: "2026-06-18",
+    matchingSkills: [
+      { name: "Power BI", category: "Analytics", level: "Advanced" },
+      { name: "Python", category: "Data", level: "Intermediate" },
+    ],
+    missingSkills: [
+      { name: "SQL Optimization", category: "Database", level: "Intermediate" },
+    ],
+    coverLetter:
+      "I’m passionate about using data to drive business decisions and improve hiring outcomes.",
+    cvFile: "Yara_Samir_CV.pdf",
+  },
+  {
+    id: "applicant-5",
+    name: "Hani Darwish",
+    role: "DevOps Engineer",
+    matchScore: 75,
+    experience: "6 years",
+    status: "Shortlisted",
+    appliedDate: "2026-06-16",
+    matchingSkills: [
+      { name: "Docker", category: "DevOps", level: "Advanced" },
+      { name: "AWS", category: "Cloud", level: "Intermediate" },
+    ],
+    missingSkills: [
+      { name: "Kubernetes", category: "Cloud", level: "Intermediate" },
+    ],
+    coverLetter:
+      "My background in automation and infrastructure helps teams release faster and more reliably.",
+    cvFile: "Hani_Darwish_CV.pdf",
+  },
+  {
+    id: "applicant-6",
+    name: "Maya Fathy",
+    role: "HR Coordinator",
+    matchScore: 88,
+    experience: "5 years",
+    status: "Applied",
+    appliedDate: "2026-06-17",
+    matchingSkills: [
+      { name: "HR Operations", category: "HR", level: "Advanced" },
+      { name: "Talent Sourcing", category: "Recruiting", level: "Intermediate" },
+    ],
+    missingSkills: [
+      { name: "Employer Branding", category: "HR", level: "Intermediate" },
+    ],
+    coverLetter:
+      "I have a strong track record of improving onboarding and candidate communication for high-growth teams.",
+    cvFile: "Maya_Fathy_CV.pdf",
+  },
 ];
 
 export const companyProfile: CompanyProfile = {
@@ -176,5 +293,5 @@ export const companyProfile: CompanyProfile = {
   website: "https://masarak.ai",
   industry: "Recruitment Technology",
   description:
-    "Masarak Talent helps companies connect with the right candidates using AI-powered matching, CV screening, and hiring analytics.",
+    "Masarak Talent helps companies connect with the right candidates using AI-powered matching, CV screening, and hiring analytics. Our platform is built for faster hiring decisions and better candidate experiences.",
 };

@@ -12,7 +12,7 @@ type JobCardProps = {
     title: string;
     company: string;
     location: string;
-    source: "LinkedIn" | "Indeed" | "Masarak";
+    source: "LinkedIn" | "Indeed" | "Masarak" | "Wezzuf";
     matchScore: number;
     description: string;
   };

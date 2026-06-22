@@ -15,6 +15,8 @@ import {
 } from "@/features/auth/components/auth-layout-parts";
 import { AuthInputField, PasswordField } from "@/features/auth/components/auth-fields";
 import { AuthPageLayout } from "@/features/auth/components/auth-page-layout";
+import { signupApi } from "@/features/auth/services/auth.api";
+import { showToast } from "@/lib/utils";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -40,105 +42,82 @@ export default function RegisterPage() {
       const last_name = String(formData.get("last_name") ?? "").trim();
 
       if (!username || !email || !password || !first_name || !last_name) {
-        setError("Please fill in all required fields.");
+        const msg = "Please fill in all required fields.";
+        setError(msg);
+        showToast(msg, { type: "error" });
         setLoading(false);
         return;
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        setError("Please enter a valid email address.");
+        const msg = "Please enter a valid email address.";
+        setError(msg);
+        showToast(msg, { type: "error" });
         setLoading(false);
         return;
       }
 
       if (password.length < 8) {
-        setError("Password must be at least 8 characters.");
+        const msg = "Password must be at least 8 characters.";
+        setError(msg);
+        showToast(msg, { type: "error" });
         setLoading(false);
         return;
       }
 
       if (password !== confirmPassword) {
-        setError("Passwords do not match.");
+        const msg = "Passwords do not match.";
+        setError(msg);
+        showToast(msg, { type: "error" });
         setLoading(false);
         return;
       }
 
-      if (role === "user") {
-        const payload = {
-          username,
-          email,
-          password,
-          first_name,
-          last_name,
-        };
+      const imageVerificationEntry = formData.get("image_verification");
+      const imageVerificationName =
+        role === "hr" && imageVerificationEntry instanceof File
+          ? imageVerificationEntry.name
+          : undefined;
 
-        const res = await fetch("https://masarak-rt9w.onrender.com/api/auth/signup/user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      const payload: any = {
+        username,
+        email,
+        password,
+        first_name,
+        last_name,
+        role,
+      };
 
-        const data = await res.json().catch(() => ({ message: "Unknown error" }));
+      if (role === "hr") {
+        const companyName = String(formData.get("company_name") ?? "").trim();
+        const website = String(formData.get("website") ?? "").trim();
+        const national_id = String(formData.get("national_id") ?? "").trim();
+        const file = formData.get("image_verification");
 
-        if (!res.ok) {
-          setError(data?.message ?? "Unable to create account.");
+        if (!companyName || !website || !national_id || !file) {
+          const msg = "Please fill in all required fields and attach verification image.";
+          setError(msg);
+          showToast(msg, { type: "error" });
           setLoading(false);
           return;
         }
 
-        setLoading(false);
-        router.push(`/verify-email?email=${encodeURIComponent(email)}&role=${role === "user" ? "jobseeker" : "hr"}`);
-        return;
+        payload.company_name = companyName;
+        payload.website = website;
+        payload.national_id = national_id;
+        payload.image_verification = imageVerificationName;
       }
 
-      // HR
-      const company = String(formData.get("company") ?? "").trim();
-      const national_id = String(formData.get("national_id") ?? "").trim();
-      const file = formData.get("image_verification");
-
-      if (!company || !national_id || !file) {
-        setError("Please fill in all required fields and attach verification image.");
-        setLoading(false);
-        return;
-      }
-
-      const fd = new FormData();
-      fd.append("username", username);
-      fd.append("email", email);
-      fd.append("password", password);
-      fd.append("first_name", first_name);
-      fd.append("last_name", last_name);
-      fd.append("company", company);
-      fd.append("national_id", national_id);
-      if (file instanceof File) {
-        fd.append("image_verification", file);
-      } else {
-        try {
-          // @ts-ignore
-          if (file && file[0]) fd.append("image_verification", file[0]);
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      const res = await fetch("https://masarak-rt9w.onrender.com/api/auth/signup/hr", {
-        method: "POST",
-        body: fd,
-      });
-
-      const data = await res.json().catch(() => ({ message: "Unknown error" }));
-
-      if (!res.ok) {
-        setError(data?.message ?? "Unable to create account.");
-        setLoading(false);
-        return;
-      }
-
+      await signupApi(payload);
+      showToast("Account created successfully.", { type: "success", duration: 2000 });
+      await new Promise((r) => setTimeout(r, 2000));
       setLoading(false);
-      router.push(`/verify-email?email=${encodeURIComponent(email)}&role=hr`);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}&role=${role}`);
     } catch (err: any) {
-      setError(err?.message ?? "An unexpected error occurred.");
+      const msg = err?.message ?? "An unexpected error occurred.";
+      setError(msg);
+      showToast(msg, { type: "error" });
       setLoading(false);
     }
   }
@@ -233,17 +212,35 @@ export default function RegisterPage() {
           {role === "hr" ? (
             <>
               <div>
-                <Label htmlFor="company" className="mb-1.5">
-                  Organization / Company
+                <Label htmlFor="company_name" className="mb-1.5">
+                  Company Name
                 </Label>
                 <AuthInputField
-                  id="company"
-                  name="company"
-                  placeholder="Acme Inc."
+                  id="company_name"
+                  name="company_name"
+                  placeholder="Enter company name"
                   required={role === "hr"}
                   icon={
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 384 512">
                       <path d="M64 48c-8.8 0-16 7.2-16 16V448c0 8.8 7.2 16 16 16h80V400c0-26.5 21.5-48 48-48s48 21.5 48 48v64h80c8.8 0 16-7.2 16-16V64c0-8.8-7.2-16-16-16H64zM0 64C0 28.7 28.7 0 64 0H320c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64z" />
+                    </svg>
+                  }
+                  className="pl-10 py-2.5"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="website" className="mb-1.5">
+                  Company Website
+                </Label>
+                <AuthInputField
+                  id="website"
+                  name="website"
+                  placeholder="https://company.com"
+                  required={role === "hr"}
+                  icon={
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 512 512">
+                      <path d="M352 256c0 22.2-1.2 43.6-3.3 64H163.3c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64H348.7c2.2 20.4 3.3 41.8 3.3 64zm28.8-64H503.9c5.3 20.5 8.1 41.9 8.1 64s-2.8 43.5-8.1 64H380.8c2.1-20.6 3.2-42 3.2-64s-1.1-43.4-3.2-64zm-112.6 0H243.7c-2.1 20.6-3.2 42-3.2 64s1.1 43.4 3.2 64h24.5c2.1-20.6 3.2-42 3.2-64s-1.1-43.4-3.2-64zM168.3 192c-2.2 20.4-3.3 41.8-3.3 64s1.2 43.6 3.3 64H8.1C2.8 299.5 0 278.1 0 256s2.8-43.5 8.1-64H168.3zM256 0c-20.5 0-41.9 2.8-64 8.1V131.3c20.6-2.1 42-3.2 64-3.2s43.4 1.1 64 3.2V8.1C297.9 2.8 276.5 0 256 0zM131.3 48.4C113.7 65.9 99 86.2 88.1 108.8C107.4 97.4 129.6 88.2 153.6 81.8c-8.3-12.3-17.8-23.8-22.3-33.4zM458.4 84.9c-15.8-17.4-34.7-31.2-55.8-40.5c12.9 10.9 24.3 23.2 34.1 36.9c5.6 7.9 10.7 16.2 15.1 24.9c8.2-7.4 14.5-15.1 18.4-21.3c1.9-2.9 3.5-5.5 4.9-8.1c-2.7-2.4-5.8-4.6-9.6-6.8c-2.6-1.5-5.5-2.8-8.7-4.1zM53.6 222.4c-2.1 20.6-3.2 42-3.2 64s1.1 43.4 3.2 64H24.3C21.1 299.5 18 278.1 18 256s3.1-43.5 6.3-64h29.3zM8.1 192H16.3c3.4-21.2 8.9-41.5 16.4-60.6c-11.2 7.3-20.8 16-28.4 26.1c-3.8 5-7 10.4-9.5 16.2c-2.1 4.8-3.7 9.8-4.8 15.1c-2.7 12.4-4.5 25.2-5.4 38.3zM152.3 465.1c-23.8-7-45.8-16.8-65.2-28.9c11.2 23.2 26.5 43.6 45 60.2c5.2-11.5 11.9-24.7 20.2-31.3zM374.4 462.6c14.4-11.1 27.3-24 38.5-38.4c-8.6 6.6-18.4 12.3-28.8 17.2c-9.6 4.6-19.8 8.2-30.5 10.7c4.1-11.5 8.3-24.4 10.1-33.4c5.2-25.7 7.6-52.8 7.6-80.7c0-28.1-2.5-55.4-7.6-81.1c-1.8-9-6.1-22-10.1-33.5c10.8 2.5 20.9 6.1 30.5 10.7c10.4 4.9 20.2 10.6 28.8 17.2c-11.2-14.4-24.1-27.3-38.5-38.4c2.3 9.8 4.2 19.4 5.5 28.8c2.7 19.6 4.1 39.7 4.1 60.2s-1.4 40.6-4.1 60.2c-1.3 9.3-3.2 19-5.5 28.8zM459.2 346.8c2.1-20.6 3.2-42 3.2-64s-1.1-43.4-3.2-64h29.3c3.1 20.5 6.2 41.9 6.2 64s-3.1 43.5-6.2 64h-29.3zM480.5 300.8c2.1-20.6 3.2-42 3.2-64s-1.1-43.4-3.2-64H500.8c1.6 20.7 2.6 42.1 2.6 64s-1 43.3-2.6 64H480.5z" />
                     </svg>
                   }
                   className="pl-10 py-2.5"
@@ -335,7 +332,7 @@ export default function RegisterPage() {
                   <AuthInputField
                     id="national_id"
                     name="national_id"
-                    placeholder="ID Number"
+                    placeholder="Enter national ID"
                     required
                     icon={
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
@@ -364,7 +361,7 @@ export default function RegisterPage() {
                       <span className="truncate">
                         {verificationFileName || "Choose an image file..."}
                       </span>
-                      <span className="flex-shrink-0 px-4 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 text-xs font-medium border border-indigo-500/20">
+                      <span className="shrink-0 px-4 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 text-xs font-medium border border-indigo-500/20">
                         Browse
                       </span>
                     </div>

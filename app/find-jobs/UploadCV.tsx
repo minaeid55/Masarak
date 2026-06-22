@@ -27,10 +27,39 @@ export function UploadCV({ onUploadComplete }: UploadCVProps) {
     setFileName(file.name);
     setIsLoading(true);
 
+    // simulate analysis delay (5s) and store mock analysis tailored to selected role
     window.setTimeout(() => {
       setIsLoading(false);
+
+      // rotate uploadCount to choose a track automatically: 0 -> frontend, 1 -> backend, 2 -> flutter
+      let uploadCount = 0;
+      try {
+        uploadCount = parseInt(localStorage.getItem("uploadCount") || "0", 10) || 0;
+      } catch {}
+      uploadCount += 1;
+      try {
+        localStorage.setItem("uploadCount", String(uploadCount));
+      } catch {}
+
+      const roles: Array<"frontend" | "backend" | "flutter"> = ["frontend", "backend", "flutter"];
+      const role = roles[(uploadCount - 1) % roles.length];
+
+      const analysis = {
+        role,
+        uploadedAt: new Date().toISOString(),
+        detectedSkills: role === "frontend" ? ["React", "JavaScript", "CSS", "HTML"] : role === "flutter" ? ["Dart", "Flutter"] : ["Node.js", "Express", "SQL"],
+        // short, analysis-level missing skills summary — detailed per-job missing skills are in job pools
+        missingSkills: role === "frontend" ? ["TypeScript", "GraphQL"] : role === "flutter" ? ["State Management", "Platform Channels"] : ["Testing", "Microservices"],
+      };
+
+      try {
+        localStorage.setItem("lastCvAnalysis", JSON.stringify(analysis));
+      } catch (e) {
+        // ignore
+      }
+
       onUploadComplete();
-    }, 1400);
+    }, 5000);
   };
 
   return (
@@ -48,14 +77,16 @@ export function UploadCV({ onUploadComplete }: UploadCVProps) {
           </div>
 
           <div className="space-y-2">
-            <Button
-              type="button"
-              onClick={handleChooseFile}
-              className="bg-linear-to-r from-indigo-500 to-purple-600 text-white px-10 py-4 rounded-2xl shadow-lg shadow-indigo-500/20"
-              disabled={isLoading}
-            >
-              {isLoading ? "Analyzing..." : "Choose File"}
-            </Button>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                type="button"
+                onClick={handleChooseFile}
+                className="bg-linear-to-r from-indigo-500 to-purple-600 text-white px-10 py-4 rounded-2xl shadow-lg shadow-indigo-500/20"
+                disabled={isLoading}
+              >
+                {isLoading ? "Analyzing..." : "Choose File"}
+              </Button>
+            </div>
             {fileName ? (
               <p className="text-sm text-slate-600">Selected file: {fileName}</p>
             ) : null}

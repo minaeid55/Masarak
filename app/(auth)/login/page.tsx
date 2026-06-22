@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -18,12 +17,13 @@ import {
 import { AuthInputField, PasswordField } from "@/features/auth/components/auth-fields";
 import { AuthPageLayout } from "@/features/auth/components/auth-page-layout";
 import { loginApi, type AuthRole } from "@/features/auth/services/auth.api";
+import { showToast } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<AuthRole>("jobseeker");
+  const [role, setRole] = useState<AuthRole>("user");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,6 +36,7 @@ export default function LoginPage() {
 
     if (!username || !password) {
       setError("Username and password are required.");
+      showToast("Username and password are required.", { type: "error" });
       setLoading(false);
       return;
     }
@@ -45,22 +46,29 @@ export default function LoginPage() {
 
       if (!response.ok) {
         setError(response.data.message || "Invalid username or password.");
+        showToast(response.data.message || "Invalid username or password.", { type: "error" });
         setLoading(false);
         return;
       }
 
       const accessToken = response.data.accessToken;
-      if (!accessToken) {
+      const user = response.data.user;
+      if (!accessToken || !user) {
         setError("Login failed. No token returned.");
+        showToast("Login failed. No token returned.", { type: "error" });
         setLoading(false);
         return;
       }
 
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("role", role);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      showToast("Login successful.", { type: "success", duration: 2000 });
+      await new Promise((r) => setTimeout(r, 2000));
 
       switch (role) {
-        case "jobseeker":
+        case "user":
           router.push("/find-jobs");
           break;
         case "hr":
@@ -71,8 +79,10 @@ export default function LoginPage() {
           break;
       }
     } catch (err: any) {
-      setError(err?.message ?? "Unable to login. Please try again.");
-      setLoading(false);
+        const msg = err?.message ?? "Unable to login. Please try again.";
+        setError(msg);
+        showToast(msg, { type: "error" });
+        setLoading(false);
     }
   }
 
@@ -102,9 +112,9 @@ export default function LoginPage() {
           <button
             type="button"
             className={`rounded-full px-4 py-2 text-sm font-medium ${
-              role === "jobseeker" ? "bg-indigo-600 text-white" : "bg-dark-800 text-gray-400"
+              role === "user" ? "bg-indigo-600 text-white" : "bg-dark-800 text-gray-400"
             }`}
-            onClick={() => setRole("jobseeker")}
+            onClick={() => setRole("user")}
           >
             Applicant
           </button>
@@ -194,16 +204,9 @@ export default function LoginPage() {
             variant="secondary"
             size="sm"
             className="social-btn w-full py-3.5 text-white"
-            onClick={() =>
-              signIn("auth0", {
-                callbackUrl:
-                  role === "jobseeker"
-                    ? "/find-jobs"
-                    : role === "hr"
-                    ? "/for-recruiters"
-                    : "/admin",
-              })
-            }
+            onClick={() => {
+              /* Auth0 is disabled during frontend-only development */
+            }}
           >
             Auth0
           </Button>

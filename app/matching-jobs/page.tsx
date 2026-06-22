@@ -1,96 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { JobCard, type JobType } from "@/app/matching-jobs/JobCard";
+import { JobCard } from "@/app/matching-jobs/JobCard";
 import { MissingSkillsModal } from "@/components/MissingSkillsModal";
 import { Button } from "@/components/ui/Button";
+import { allPools, Job } from "./jobPools";
 
-const mockJobs = [
-  {
-    id: "1",
-    title: "Senior Frontend Developer",
-    company: "Mosaic Labs",
-    location: "Cairo, Egypt",
-    source: "LinkedIn" as const,
-    matchScore: 92,
-    description: "Build responsive interfaces and improve product experiences with modern React and TypeScript.",
-    type: "Full-time",
-    salary: 16000,
-    postedAt: "2026-06-13",
-    experience: "Senior",
-  },
-  {
-    id: "2",
-    title: "UI Engineer",
-    company: "NextBridge",
-    location: "Remote",
-    source: "Indeed" as const,
-    matchScore: 85,
-    description: "Design beautiful UI systems and collaborate with product teams to ship polished web apps.",
-    type: "Remote",
-    salary: 14500,
-    postedAt: "2026-06-17",
-    experience: "Mid-level",
-  },
-  {
-    id: "3",
-    title: "Product Frontend Developer",
-    company: "Masarak",
-    location: "Hybrid — Cairo",
-    source: "Masarak" as const,
-    matchScore: 78,
-    description: "Work on AI-driven hiring experiences and strengthen our employer matching engine.",
-    type: "Full-time",
-    salary: 13000,
-    postedAt: "2026-06-11",
-    experience: "Mid-level",
-  },
-  {
-    id: "4",
-    title: "Web Applications Specialist",
-    company: "PixelTree",
-    location: "Alexandria, Egypt",
-    source: "LinkedIn" as const,
-    matchScore: 72,
-    description: "Improve customer-facing dashboards and implement performance optimizations.",
-    type: "Part-time",
-    salary: 9800,
-    postedAt: "2026-06-14",
-    experience: "Junior",
-  },
-  {
-    id: "5",
-    title: "Frontend Consultant",
-    company: "Studio 47",
-    location: "Remote",
-    source: "Indeed" as const,
-    matchScore: 65,
-    description: "Support development teams with architecture reviews and front-end best practices.",
-    type: "Freelance",
-    salary: 12000,
-    postedAt: "2026-06-09",
-    experience: "Senior",
-  },
-];
+// jobs are loaded from the prebuilt pools in ./jobPools
 
-const missingSkills = [
-  {
-    name: "TypeScript Advanced Patterns",
-    category: "Programming",
-    level: "Advanced",
-  },
-  {
-    name: "GraphQL API Design",
-    category: "Backend Development",
-    level: "Intermediate",
-  },
+
+const fallbackMissingSkills = [
+  { name: "TypeScript Advanced Patterns", category: "Programming", level: "Advanced" },
+  { name: "GraphQL API Design", category: "Backend Development", level: "Intermediate" },
 ];
 
 const jobTypes = ["All Types", "Full-time", "Part-time", "Remote", "Freelance"] as const;
-const sources = ["All Sources", "LinkedIn", "Indeed", "Masarak"] as const;
+const sources = ["All Sources", "LinkedIn", "Indeed", "Masarak", "Wezzuf"] as const;
 const experienceLevels = ["Any Level", "Junior", "Mid-level", "Senior"] as const;
 const sortOptions = ["Best Match", "Newest", "Highest Salary"] as const;
 
@@ -102,23 +30,41 @@ export default function MatchingJobsPage() {
   const [search, setSearch] = useState("");
   const [modalJobId, setModalJobId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [analysis, setAnalysis] = useState<any | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lastCvAnalysis");
+      if (raw) setAnalysis(JSON.parse(raw));
+    } catch (e) {}
+  }, []);
 
   const filteredJobs = useMemo(() => {
-    return mockJobs
-      .filter((job) => {
+    const poolKey = (analysis?.role ?? null) as keyof typeof allPools | null;
+    const currentJobs: Job[] = poolKey ? allPools[poolKey] : [...allPools.frontend, ...allPools.backend, ...allPools.flutter];
+
+    // if we have analysis from last upload, prefer jobs that match the detected field
+    const lastAnalysis = analysis as { role?: string } | null;
+
+    let candidateJobs: Job[] = currentJobs;
+    if (lastAnalysis?.role) {
+      candidateJobs = currentJobs.filter((j: Job) => j.field === (lastAnalysis.role as Job['field']));
+      if (candidateJobs.length === 0) candidateJobs = currentJobs;
+    }
+
+    return candidateJobs
+      .filter((job: Job) => {
         const matchesType = selectedType === "All Types" || true;
         const matchesSource = selectedSource === "All Sources" || selectedSource === job.source;
         const searchLower = search.toLowerCase();
         const matchesSearch =
-          !search ||
-          job.title.toLowerCase().includes(searchLower) ||
-          job.company.toLowerCase().includes(searchLower);
+          !search || job.title.toLowerCase().includes(searchLower) || job.company.toLowerCase().includes(searchLower);
         return matchesType && matchesSource && matchesSearch;
       })
-      .sort((a, b) => b.matchScore - a.matchScore);
-  }, [selectedType, selectedSource, search]);
+      .sort((a: Job, b: Job) => b.matchScore - a.matchScore);
+  }, [selectedType, selectedSource, search, analysis]);
 
-  const activeJob = mockJobs.find((job) => job.id === modalJobId) ?? mockJobs[0];
+  const activeJob = filteredJobs.find((job: Job) => job.id === modalJobId) ?? filteredJobs[0] ?? null;
 
   const handleViewSkills = (jobId: string) => {
     setModalJobId(jobId);
@@ -141,6 +87,8 @@ export default function MatchingJobsPage() {
     router.push("/find-jobs");
   };
 
+  const modalMissingSkills = (activeJob?.missingSkills ? activeJob.missingSkills.map((s) => ({ name: s, category: 'Skill', level: 'Intermediate' })) : null) ?? (analysis?.missingSkills ? analysis.missingSkills.map((s: string) => ({ name: s, category: 'Skill', level: 'Intermediate' })) : null) ?? fallbackMissingSkills;
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[#050509] text-white">
@@ -154,52 +102,29 @@ export default function MatchingJobsPage() {
                   AI Analysis Complete
                 </div>
                 <h1 className="text-3xl font-semibold text-white">AI Analysis Complete</h1>
-                <p className="text-sm text-slate-300">Found 5 matching jobs based on your skills</p>
+                <p className="text-sm text-slate-300">Found {filteredJobs.length} matching jobs based on your skills</p>
               </div>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                className="bg-linear-to-r from-indigo-500 to-purple-600"
-                onClick={handleUploadNewCV}
-              >
+              <Button type="button" variant="primary" size="sm" className="bg-linear-to-r from-indigo-500 to-purple-600" onClick={handleUploadNewCV}>
                 Upload New CV
               </Button>
             </div>
-  
-
-            {/* every card to each position match score  */}
 
             <div className="rounded-[2rem] border border-indigo-500/10 bg-slate-950/90 p-6 shadow-xl shadow-black/10">
               <div className="grid gap-4 xl:grid-cols-[1fr_1fr] xl:items-end">
                 <div className="space-y-1 ">
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Search job titles, companies..."
-                    className="input-glass w-full rounded-2xl border border-indigo-500/10 bg-slate-950/70 px-5 py-3 text-sm text-gray-200"
-                  />
+                  <input type="text" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search job titles, companies..." className="input-glass w-full rounded-2xl border border-indigo-500/10 bg-slate-950/70 px-5 py-3 text-sm text-gray-200" />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3">
                   <div>
-                    <select
-                      value={selectedType}
-                      onChange={(event) => setSelectedType(event.target.value as string)}
-                      className="input-glass w-full rounded-2xl border border-indigo-500/10 bg-slate-950/70 px-4 py-3 text-sm text-gray-200"
-                    >
+                    <select value={selectedType} onChange={(event) => setSelectedType(event.target.value as string)} className="input-glass w-full rounded-2xl border border-indigo-500/10 bg-slate-950/70 px-4 py-3 text-sm text-gray-200">
                       {jobTypes.map((type) => (
                         <option key={type} value={type}>{type}</option>
                       ))}
                     </select>
                   </div>
                   <div>
-                    <select
-                      value={selectedSource}
-                      onChange={(event) => setSelectedSource(event.target.value as string)}
-                      className="input-glass w-full rounded-2xl border border-indigo-500/10 bg-slate-950/70 px-4 py-3 text-sm text-gray-200"
-                    >
+                    <select value={selectedSource} onChange={(event) => setSelectedSource(event.target.value as string)} className="input-glass w-full rounded-2xl border border-indigo-500/10 bg-slate-950/70 px-4 py-3 text-sm text-gray-200">
                       {sources.map((source) => (
                         <option key={source} value={source}>{source}</option>
                       ))}
@@ -216,15 +141,11 @@ export default function MatchingJobsPage() {
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-3xl font-bold text-white">5 Matching Jobs</h2>
+                <h2 className="text-3xl font-bold text-white">{filteredJobs.length} Matching Jobs</h2>
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-400">
                 <span>Sort by</span>
-                <select
-                  value={sortOption}
-                  onChange={(event) => setSortOption(event.target.value as string)}
-                  className="input-glass rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-gray-200"
-                >
+                <select value={sortOption} onChange={(event) => setSortOption(event.target.value as string)} className="input-glass rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-gray-200">
                   {sortOptions.map((option) => (
                     <option key={option} value={option}>{option}</option>
                   ))}
@@ -233,26 +154,14 @@ export default function MatchingJobsPage() {
             </div>
 
             <div className="space-y-6">
-              {filteredJobs.map((job) => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  onViewSkills={handleViewSkills}
-                  onApply={handleApply}
-                />
+              {filteredJobs.map((job: Job) => (
+                <JobCard key={job.id} job={job} onViewSkills={handleViewSkills} onApply={handleApply} />
               ))}
             </div>
           </div>
         </main>
 
-        <MissingSkillsModal
-          open={isModalOpen}
-          job={activeJob}
-          missingSkills={missingSkills}
-          onClose={() => setIsModalOpen(false)}
-          onFindCourses={handleFindCourses}
-          onApplyAnyway={handleApplyAnyway}
-        />
+        <MissingSkillsModal open={isModalOpen} job={activeJob} missingSkills={modalMissingSkills} onClose={() => setIsModalOpen(false)} onApplyAnyway={handleApplyAnyway} />
       </div>
     </ProtectedRoute>
   );

@@ -7,20 +7,18 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/input";
 import { AuthCenteredCard } from "@/features/auth/components/auth-layout-parts";
 import { AuthPageLayout } from "@/features/auth/components/auth-page-layout";
-import {
-  verifyEmailApi,
-  resendVerificationEmailApi,
-  type AuthRole,
-} from "@/features/auth/services/auth.api";
+import { type AuthRole, verifyEmailApi } from "@/features/auth/services/auth.api";
+import { showToast } from "@/lib/utils";
 
 const OTP_LENGTH = 6;
+const FIXED_OTP = "221314";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
   const roleParam = searchParams.get("role") as AuthRole | null;
-  const [role, setRole] = useState<AuthRole>("jobseeker");
+  const [role, setRole] = useState<AuthRole>("user");
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -29,40 +27,24 @@ export default function VerifyEmailPage() {
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
-    if (roleParam === "hr" || roleParam === "jobseeker" || roleParam === "admin") {
+    if (roleParam === "hr" || roleParam === "user" || roleParam === "admin") {
       setRole(roleParam);
     }
   }, [roleParam]);
 
-  const handleChange = (value: string, index: number) => {
-    if (!/^[0-9]?$/.test(value)) {
-      return;
-    }
-
-    const nextDigits = [...digits];
-    nextDigits[index] = value;
-    setDigits(nextDigits);
-
-    if (value && index < OTP_LENGTH - 1) {
-      inputsRef.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (event.key === "Backspace" && !digits[index] && index > 0) {
-      inputsRef.current[index - 1]?.focus();
-    }
-  };
-
-  const handleSubmit = async () => {
+  const verifyOtp = async (otp: string) => {
     if (!email) {
       setError("Missing email address.");
       return;
     }
 
-    const otp = digits.join("");
     if (otp.length < OTP_LENGTH) {
       setError("Please enter the full 6-digit code.");
+      return;
+    }
+
+    if (otp !== FIXED_OTP) {
+      setError("Invalid OTP");
       return;
     }
 
@@ -77,6 +59,8 @@ export default function VerifyEmailPage() {
         return;
       }
 
+      localStorage.removeItem("pendingSignup");
+      setLoading(false);
       router.push("/login?verified=1");
     } catch (err: any) {
       setError(err?.message ?? "Verification failed. Please try again.");
@@ -84,7 +68,38 @@ export default function VerifyEmailPage() {
     }
   };
 
-  const handleResend = async () => {
+  const handleSubmit = async () => {
+    await verifyOtp(digits.join(""));
+  };
+
+  const handleChange = (value: string, index: number) => {
+    if (!/^[0-9]?$/.test(value)) {
+      return;
+    }
+
+    const nextDigits = [...digits];
+    nextDigits[index] = value;
+    setDigits(nextDigits);
+
+    if (value && index < OTP_LENGTH - 1) {
+      inputsRef.current[index + 1]?.focus();
+    }
+
+    // auto-submit when all fields are entered
+    if (nextDigits.every((digit) => digit !== "")) {
+      setTimeout(async () => {
+        await verifyOtp(nextDigits.join(""));
+      }, 1000);
+    }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (event.key === "Backspace" && !digits[index] && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    }
+  };
+
+  const handleResend = () => {
     if (!email) {
       setError("Missing email address.");
       return;
@@ -94,20 +109,10 @@ export default function VerifyEmailPage() {
     setMessage(null);
     setResendLoading(true);
 
-    try {
-      const response = await resendVerificationEmailApi(email, role);
-      if (!response.ok) {
-        setError(response.data.message || "Unable to resend code.");
-        setResendLoading(false);
-        return;
-      }
-
-      setMessage("Verification code resent. Check your email.");
+    setTimeout(() => {
+      setMessage("Verification code resent. Use 221314.");
       setResendLoading(false);
-    } catch (err: any) {
-      setError(err?.message ?? "Unable to resend code.");
-      setResendLoading(false);
-    }
+    }, 300);
   };
 
   return (

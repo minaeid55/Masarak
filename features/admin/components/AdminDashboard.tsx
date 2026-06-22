@@ -67,7 +67,7 @@ export function AdminDashboard() {
 
   const pendingApprovals = approvals.filter((item) => item.status === "Pending").length;
   const totalUsers = users.length;
-  const totalApplications = 128; // mock aggregated number
+  const totalApplications = 156; // mock aggregated number
   const activeJobCount = initialActiveJobs.length;
 
   const filteredUsers = useMemo(
